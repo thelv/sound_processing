@@ -3,6 +3,8 @@
 
 #define WAV_HEADER_SIZE 44
 #define BUF_LEN 216282
+#define VALUES_PER_SEC 44100;
+# define PI 3.14159265358979323846
 
 template <typename type> void wav_read(const char* file_name, type* buf, int len)
 {
@@ -74,6 +76,108 @@ template <typename type> void convolusion(type* buf, int len, type* IR, int IRle
 
 }
 
+template <typename type> void distortion_log(type* buf, int len, type* buf_, type max_val)
+{
+	float max_val_log=-log(max_val);
+	for(int i=0; i<len; i++)
+	{
+		type v=buf[i];
+		if(v>max_val)
+		{
+			buf_[i]=max_val+(log(v)+max_val_log)*max_val;
+		}
+		else if(v<-max_val)
+		{
+			buf_[i]=-max_val-(log(-v)+max_val_log)*max_val;
+		}
+		else
+		{
+			buf_[i]=buf[i];
+		}		
+	}
+}
+
+template <typename type> void distortion_RC(type* buf, int len, type* buf_, type max_val)
+{
+	float max_val_log=-log(max_val);
+	float q=0;
+	for(int i=0; i<len; i++)
+	{
+		type v=buf[i];
+		if(v>max_val)
+		{
+			buf_[i]=max_val+(log(v)+max_val_log)*max_val;
+		}
+		else if(v<-max_val)
+		{
+			buf_[i]=-max_val-(log(-v)+max_val_log)*max_val;
+		}
+		else
+		{
+			buf_[i]=buf[i];
+		}		
+	}
+}
+
+template <typename type> void distortion_hard(type* buf, int len, type* buf_, type max_val)
+{
+	float max_val_log=-log(max_val);
+	float q=0;
+	for(int i=0; i<len; i++)
+	{
+		type v=buf[i];
+		if(v>max_val)
+		{
+			buf_[i]=max_val;
+		}
+		else if(v<-max_val)
+		{
+			buf_[i]=-max_val;
+		}
+		else
+		{
+			buf_[i]=buf[i];
+		}		
+	}
+}
+
+template <typename type> void distortion_inverse(type* buf, int len, type* buf_, type max_val)
+{
+	float max_val_float=max_val;
+	float q=0;
+	for(int i=0; i<len; i++)
+	{
+		type v=buf[i];
+		if(v>max_val)
+		{
+			buf_[i]=max_val*(2-max_val_float/v);
+		}
+		else if(v<-max_val)
+		{
+			buf_[i]=-max_val*(2+max_val_float/v);
+		}
+		else
+		{
+			buf_[i]=buf[i];
+		}		
+	}
+}
+
+template <typename type> void gen_sin(type* buf, int len, float freq, float scale)
+{	
+	type max_val;
+	memset(&max_val, 0xffffffff, sizeof(type));
+	*((char*) &max_val+sizeof(type)-1)=0x7f;
+	max_val=max_val*scale;
+
+	float w=2*PI*freq/VALUES_PER_SEC;
+
+	for(int i=0; i<len; i++)
+	{
+			buf[i]=max_val*sin(w*i);
+	}
+}
+
 int main()
 {	
 	short buf[BUF_LEN], buf_[BUF_LEN];
@@ -81,10 +185,52 @@ int main()
 
 	wav_read("sample.wav", buf, BUF_LEN);
 
-	amp(buf, BUF_LEN, buf, 2);
-	pitch(buf, BUF_LEN, buf_, 0.5);
-	RC_high(buf_, BUF_LEN, buf_, 0.5);
-	amp(buf_, BUF_LEN, buf_, 1);
+	amp(buf, BUF_LEN, buf, 10);
+	RC_low(buf, BUF_LEN, buf, 0.1);
+	RC_high(buf, BUF_LEN, buf, 0.1);
+	//pitch(buf, BUF_LEN, buf_, 0.5);
+	//RC_low(buf, BUF_LEN, buf, 0.1);
+	//RC_high(buf, BUF_LEN, buf, 0.1);
+	//amp(buf_, BUF_LEN, buf_, 1);
 
-	wav_write("sample_.wav", buf_, BUF_LEN);
+	//distortion_log(buf, BUF_LEN, buf, (short) (SHRT_MAX/202));
+	distortion_inverse(buf, BUF_LEN, buf, (short) (SHRT_MAX/60));
+	//distortion_log(buf, BUF_LEN, buf, (short) (SHRT_MAX/52));
+	//RC_low(buf, BUF_LEN, buf, 0.2);
+	//RC_high(buf, BUF_LEN, buf, 0.05);
+	amp(buf, BUF_LEN, buf, 24);
+
+	//gen_sin(buf, BUF_LEN, 1000, 0.5);
+
+	//distortion_inverse(buf, BUF_LEN, buf, (short) (SHRT_MAX/4));
+
+	wav_write("sample_.wav", buf, BUF_LEN);
+
+	/*std::cout << 0;
+
+	float s=0;
+	for(int i=0; i<=44100*1000; i++)
+	{
+		s+=log(i);
+	}
+
+	std::cout << s;
+
+	
+	float s=0;
+	float s1=0;
+	float s2=0;
+	float s3=0;
+	for(int i=0; i<=44100*250; i++)
+	{
+		s+=log(i);
+		s1+=log(i+1);
+		s2+=log(i+2);
+		s3+=log(i+3);
+	}
+
+	std::cout << s;
+	std::cout << s1;
+	std::cout << s2;
+	std::cout << s3;*/
 }
