@@ -1,10 +1,14 @@
 #include "pch.h"
 #include <iostream>
+#include <algorithm>
+#include <string>
 
 #define WAV_HEADER_SIZE 44
 #define BUF_LEN 216282
+#define IR_LEN (353236-44)/2
+//125044
 #define VALUES_PER_SEC 44100;
-# define PI 3.14159265358979323846
+#define PI 3.14159265358979323846
 
 template <typename type> void wav_read(const char* file_name, type* buf, int len)
 {
@@ -14,10 +18,64 @@ template <typename type> void wav_read(const char* file_name, type* buf, int len
 	fclose(f);
 }
 
+void wav_read(const char* file_name, void* buf, int* len)
+{
+	FILE* f=fopen(file_name, "rb");
+	fseek(f, 0, SEEK_END);
+	*len=ftell(f)-WAV_HEADER_SIZE;
+	fseek(f, WAV_HEADER_SIZE, SEEK_SET);
+	fread(buf, 1, *len, f);
+	fclose(f);
+}
+
+char* wav_header_create(int len)
+{
+	char* buf=new char[WAV_HEADER_SIZE];	
+	
+	memcpy(buf, (char*) "RIFF", 4);
+	buf+=4;
+
+	*((int*) buf)=len+36;
+	buf+=4;
+
+	memcpy(buf, (char*) "WAVEfmt ", 8);
+	buf+=8;
+
+	*((int*) buf)=16;
+	buf+=4;
+
+	*((short*) buf)=1;
+	buf+=2;
+
+	*((short*) buf)=1;
+	buf+=2;
+
+	*((int*) buf)=44100;
+	buf+=4;
+
+	*((int*) buf)=44100*3;
+	buf+=4;
+
+	*((short*) buf)=3;
+	buf+=2;
+
+	*((short*) buf)=24;
+	buf+=2;
+
+	memcpy(buf, (char*) "data", 4);
+	buf+=4;
+
+	*((int*) buf)=len;
+	buf+=4;
+
+	return buf-WAV_HEADER_SIZE;
+}
+
 template <typename type> void wav_write(const char* file_name, type* buf, int len)
 {
-	FILE* f=fopen(file_name, "rb+");
-	fseek(f, WAV_HEADER_SIZE, SEEK_SET);
+	FILE* f=fopen(file_name, "wb");
+	//fseek(f, WAV_HEADER_SIZE, SEEK_SET);
+	fwrite(wav_header_create(len*sizeof(type)), 1, WAV_HEADER_SIZE, f);
 	fwrite(buf, sizeof(type), len, f);
 	fclose(f);
 }
@@ -73,7 +131,16 @@ template <typename type> void RC_high(type* buf, int len, type* buf_, float p)
 
 template <typename type> void convolusion(type* buf, int len, type* IR, int IRlen, type* buf_)
 {
-
+	for(int i=0; i<len; i++)
+	{
+		int s=0;
+		for(int j=std::max(0, i-IRlen-1); j<=i; j++)
+		{
+			s+=buf[j]*IR[i-j];
+		}
+		//memcpy((type*) &s+sizeof(int)/sizeof(type)-1, buf_+i, sizeof(type));
+		buf_[i]=s/32768;
+	}
 }
 
 template <typename type> void distortion_log(type* buf, int len, type* buf_, type max_val)
@@ -178,13 +245,108 @@ template <typename type> void gen_sin(type* buf, int len, float freq, float scal
 	}
 }
 
+struct Samples_cut_sample 
+{
+	char* data;
+	int len;
+	int volumeMax;
+};
+
+int samples_cut_cmp(const Samples_cut_sample* s1, const Samples_cut_sample* s2)
+{
+	return s1->volumeMax-s2->volumeMax;
+}
+
+int convert_24_to_32_bit(char* data)
+{
+	int a=0;
+	memcpy((char*) &a+1, data, 3);
+	return a;
+}
+
+void samples_cut(const char* file_name)
+{	
+
+	Samples_cut_sample samples[20]={};
+
+	char* buf=new char[100000000];
+	int len;
+	wav_read(((std::string) file_name+".wav").c_str(), buf, &len);
+
+	double k=44100./48000;
+
+	int p[16]=
+	{
+		324575,
+		1443320,
+		2447035,
+		3721047,
+		4683372,
+		6457727,
+		8131853,
+		9900124,
+		11399520,
+		12869071,
+		14337975,
+		15770952,
+		17061161,
+		18556342,
+		21185738, 
+		(int) ((float) len/k)/3
+	};
+
+	int samplesCount=sizeof(p)/sizeof(int)-1;
+
+	for(int i=1; i!=samplesCount+1; i++)
+	{		
+		samples[i-1].data=buf+3*(int) (k*p[i-1]);
+		samples[i-1].len=(int) (k*(p[i]-p[i-1]))-100000;
+	}	
+
+	for(int i=0; i<samplesCount; i++)
+	{
+		Samples_cut_sample& sample=samples[i];
+
+		int volumeMax=0;		
+		for(int j=0; j<sample.len; j++)
+		{
+			int volumeCur=std::abs(convert_24_to_32_bit(sample.data+j*3));
+			volumeMax=std::max(volumeMax, volumeCur);
+		}
+
+		sample.volumeMax=volumeMax;
+	}
+
+	qsort(samples, samplesCount, sizeof(Samples_cut_sample), (_CoreCrtNonSecureSearchSortCompareFunction) samples_cut_cmp);
+
+	for(int i=0; i<samplesCount; i++)
+	{		
+		wav_write<char>((file_name+(std::string) "-"+std::to_string(i)+".wav").c_str(), samples[i].data, samples[i].len*3);
+		std::cout << "\n";
+		std::cout << (double) samples[i].volumeMax/INT32_MAX;
+	}
+	//fgets()
+}
+
+/*void wav_convert_24_to_32_bit(char* buf24, int len, int* buf32)
+{
+}*/
+
 int main()
+{
+	samples_cut("44-0-0");
+	return 1;
+}
+
+int main1()
 {	
 	short buf[BUF_LEN], buf_[BUF_LEN];
+	short* IRbuf=new short[IR_LEN];
 	memset(buf_, 0, BUF_LEN*sizeof(*buf_));
 
 	wav_read("sample.wav", buf, BUF_LEN);
-
+	wav_read("IR3.wav", IRbuf, IR_LEN);
+/*
 	amp(buf, BUF_LEN, buf, 10);
 	RC_low(buf, BUF_LEN, buf, 0.1);
 	RC_high(buf, BUF_LEN, buf, 0.1);
@@ -198,13 +360,15 @@ int main()
 	//distortion_log(buf, BUF_LEN, buf, (short) (SHRT_MAX/52));
 	//RC_low(buf, BUF_LEN, buf, 0.2);
 	//RC_high(buf, BUF_LEN, buf, 0.05);
-	amp(buf, BUF_LEN, buf, 24);
+	amp(buf, BUF_LEN, buf, 24);*/
+
+	convolusion(buf, BUF_LEN, IRbuf, IR_LEN, buf_);
 
 	//gen_sin(buf, BUF_LEN, 1000, 0.5);
 
 	//distortion_inverse(buf, BUF_LEN, buf, (short) (SHRT_MAX/4));
 
-	wav_write("sample_.wav", buf, BUF_LEN);
+	wav_write("sample_.wav", buf_, BUF_LEN);
 
 	/*std::cout << 0;
 
@@ -233,4 +397,5 @@ int main()
 	std::cout << s1;
 	std::cout << s2;
 	std::cout << s3;*/
+	return 0;
 }
