@@ -264,6 +264,61 @@ int convert_24_to_32_bit(char* data)
 	return a;
 }
 
+int* samples_find_cut_points(const char* file_name, int* len_return)
+{
+	int* cut_points=new int[1000];
+	int cut_points_n=0;
+
+	char* buf=new char[150000000];
+	int len;
+	wav_read(((std::string) file_name+".wav").c_str(), buf, &len);
+
+	int samples_len=len/3;
+	int cursor=0;
+
+	while(true)
+	{
+		//wait silence
+		int silence_count=0;
+		while(silence_count<44100)
+		{
+			if(abs(convert_24_to_32_bit(buf+cursor*3))<INT32_MAX/50)
+			{
+				silence_count++;
+			}
+			else
+			{
+				silence_count=0;
+			}
+
+			cursor++;
+			if(cursor>samples_len) goto end;
+		}
+
+		//find sample start 
+		while(abs(convert_24_to_32_bit(buf+cursor*3))<INT32_MAX/70)
+		{			
+			cursor++;
+			if(cursor>samples_len) goto end;
+		}
+
+		int a=convert_24_to_32_bit(buf+cursor*3);
+		bool sign=(a>0);
+		while((convert_24_to_32_bit(buf+cursor*3)>0)==sign)
+		{
+			cursor--;
+		}
+
+		cut_points[++cut_points_n]=cursor;
+	}
+
+	end:
+
+		cut_points[++cut_points_n]=samples_len;
+		*len_return=samples_len;
+		return cut_points;
+}
+
 void samples_cut(const char* file_name)
 {	
 
@@ -273,7 +328,7 @@ void samples_cut(const char* file_name)
 	int len;
 	wav_read(((std::string) file_name+".wav").c_str(), buf, &len);
 
-	double k=44100./48000;
+	double k=1;//44100./48000;
 
 	int p[16]=
 	{
@@ -317,7 +372,7 @@ void samples_cut(const char* file_name)
 		sample.volumeMax=volumeMax;
 	}
 
-	qsort(samples, samplesCount, sizeof(Samples_cut_sample), (_CoreCrtNonSecureSearchSortCompareFunction) samples_cut_cmp);
+	//qsort(samples, samplesCount, sizeof(Samples_cut_sample), (_CoreCrtNonSecureSearchSortCompareFunction) samples_cut_cmp);
 
 	for(int i=0; i<samplesCount; i++)
 	{		
@@ -332,10 +387,16 @@ void samples_cut(const char* file_name)
 {
 }*/
 
-int main()
+int main2()
 {
 	samples_cut("44-0-0");
 	return 1;
+}
+
+int main()
+{
+	int len;
+	samples_find_cut_points("44-0-0", &len);
 }
 
 int main1()
