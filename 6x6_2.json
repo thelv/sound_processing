@@ -1,0 +1,182 @@
+[
+	{
+		string: 0,
+		fret: 0,
+		count: 1
+	},
+	{
+		string: 0,
+		fret: 1,
+		count: 1
+	},
+	{
+		string: 0,
+		fret: 2,
+		count: 1
+	},
+	{
+		string: 0,
+		fret: 3,
+		count: 1
+	},
+	{
+		string: 0,
+		fret: 4,
+		count: 1
+	},
+	{
+		string: 1,
+		fret: 5,
+		count: 1
+	},
+	{
+		string: 1,
+		fret: 0,
+		count: 1
+	},
+	{
+		string: 1,
+		fret: 1,
+		count: 1
+	},
+	{
+		string: 1,
+		fret: 2,
+		count: 1
+	},
+	{
+		string: 1,
+		fret: 3,
+		count: 1
+	},
+	{
+		string: 1,
+		fret: 4,
+		count: 1
+	},
+	{
+		string: 2,
+		fret: 5,
+		count: 1
+	},
+	{
+		string: 2,
+		fret: 0,
+		count: 1
+	},
+	{
+		string: 2,
+		fret: 1,
+		count: 1
+	},
+	{
+		string: 2,
+		fret: 2,
+		count: 1
+	},
+	{
+		string: 2,
+		fret: 3,
+		count: 1
+	},
+	{
+		string: 2,
+		fret: 4,
+		count: 1
+	},
+	{
+		string: 2,
+		fret: 5,
+		count: 1
+	},
+	{
+		string: 3,
+		fret: 0,
+		count: 1
+	},
+	{
+		string: 3,
+		fret: 1,
+		count: 1
+	},
+	{
+		string: 3,
+		fret: 2,
+		count: 1
+	},
+	{
+		string: 3,
+		fret: 3,
+		count: 1
+	},
+	{
+		string: 3,
+		fret: 4,
+		count: 1
+	},
+	{
+		string: 3,
+		fret: 5,
+		count: 1
+	},
+	{
+		string: 4,
+		fret: 0,
+		count: 1
+	},
+	{
+		string: 4,
+		fret: 1,
+		count: 1
+	},
+	{
+		string: 4,
+		fret: 2,
+		count: 1
+	},
+	{
+		string: 4,
+		fret: 3,
+		count: 1
+	},
+	{
+		string: 4,
+		fret: 4,
+		count: 1
+	},
+	{
+		string: 4,
+		fret: 5,
+		count: 1
+	},
+	{
+		string: 5,
+		fret: 0,
+		count: 1
+	},
+	{
+		string: 5,
+		fret: 1,
+		count: 1
+	},
+	{
+		string: 5,
+		fret: 2,
+		count: 1
+	},
+	{
+		string: 5,
+		fret: 3,
+		count: 1
+	},
+	{
+		string: 5,
+		fret: 4,
+		count: 1
+	},
+	{
+		string: 5,
+		fret: 5,
+		count: 1
+	}
+]

@@ -2,6 +2,7 @@
 #include <iostream>
 #include <algorithm>
 #include <string>
+#include "json.hpp"
 
 #define WAV_HEADER_SIZE 44
 #define BUF_LEN 216282
@@ -9,6 +10,50 @@
 //125044
 #define VALUES_PER_SEC 44100;
 #define PI 3.14159265358979323846
+
+using json = nlohmann::json;
+
+char* readFullFile(char* fileName, int* len)
+{
+	FILE* f;
+	fopen_s(&f, fileName, "r");
+	fseek(f, 0, SEEK_END);	
+	int fileSize=ftell(f);
+	fseek(f, 0, SEEK_SET);
+
+	char* buf=new char[fileSize];
+	fread(buf, 1, fileSize, f);
+
+	*len=fileSize;
+	return buf;
+}
+
+std::string charArrayToString(char* buf, int len)
+{
+	char* buf_=new char[len+1];
+	memcpy(buf_, buf, len);
+	buf_[len]=0;
+
+	std::string s=std::string(buf_);
+	free(buf_);
+	return s;
+}
+
+void writeFillFile(const char* fileName, std::string s)
+{
+	FILE* f;
+	fopen_s(&f, fileName, "w+");
+	fwrite(s.c_str(), 1, s.length(), f);
+}
+
+std::string readFullFile(char* fileName)
+{
+	int len;
+	char* buf=readFullFile(fileName, &len);
+	std::string res=charArrayToString(buf, len);
+	free(buf);
+	return res;
+}
 
 template <typename type> void wav_read(const char* file_name, type* buf, int len)
 {
@@ -250,6 +295,9 @@ struct Samples_cut_sample
 	char* data;
 	int len;
 	int volumeMax;
+	int string;
+	int fret;
+	int pitch;
 };
 
 int samples_cut_cmp(const Samples_cut_sample* s1, const Samples_cut_sample* s2)
@@ -269,6 +317,8 @@ int* samples_find_cut_points(const char* file_name, int* len_return)
 	int* cut_points=new int[1000];
 	int cut_points_n=0;
 
+	cut_points[cut_points_n++]=0;
+
 	char* buf=new char[150000000];
 	int len;
 	wav_read(((std::string) file_name+".wav").c_str(), buf, &len);
@@ -282,7 +332,7 @@ int* samples_find_cut_points(const char* file_name, int* len_return)
 		int silence_count=0;
 		while(silence_count<44100)
 		{
-			if(abs(convert_24_to_32_bit(buf+cursor*3))<INT32_MAX/50)
+			if(abs(convert_24_to_32_bit(buf+cursor*3))<INT32_MAX/200)
 			{
 				silence_count++;
 			}
@@ -296,7 +346,7 @@ int* samples_find_cut_points(const char* file_name, int* len_return)
 		}
 
 		//find sample start 
-		while(abs(convert_24_to_32_bit(buf+cursor*3))<INT32_MAX/70)
+		while(abs(convert_24_to_32_bit(buf+cursor*3))<INT32_MAX/175)
 		{			
 			cursor++;
 			if(cursor>samples_len) goto end;
@@ -309,28 +359,27 @@ int* samples_find_cut_points(const char* file_name, int* len_return)
 			cursor--;
 		}
 
-		cut_points[++cut_points_n]=cursor;
+		cut_points[cut_points_n++]=cursor;
 	}
 
 	end:
 
 		cut_points[++cut_points_n]=samples_len;
-		*len_return=samples_len;
+		*len_return=cut_points_n;
 		return cut_points;
 }
 
-void samples_cut(const char* file_name)
+Samples_cut_sample* samples_cut(const char* file_name, int* cut_points, int cut_points_n, json j)
 {	
+	Samples_cut_sample* samples=new Samples_cut_sample[cut_points_n];
 
-	Samples_cut_sample samples[20]={};
-
-	char* buf=new char[100000000];
+	char* buf=new char[150000000];
 	int len;
 	wav_read(((std::string) file_name+".wav").c_str(), buf, &len);
 
 	double k=1;//44100./48000;
 
-	int p[16]=
+	int* p=cut_points;/*[16]=
 	{
 		324575,
 		1443320,
@@ -348,14 +397,25 @@ void samples_cut(const char* file_name)
 		18556342,
 		21185738, 
 		(int) ((float) len/k)/3
-	};
+	};*/
 
-	int samplesCount=sizeof(p)/sizeof(int)-1;
+	int samplesCount=cut_points_n-1;
 
+	int j_i=0;
+	int j_ij=0;
 	for(int i=1; i!=samplesCount+1; i++)
-	{		
+	{	
 		samples[i-1].data=buf+3*(int) (k*p[i-1]);
-		samples[i-1].len=(int) (k*(p[i]-p[i-1]))-100000;
+		samples[i-1].len=(int) (k*(p[i]-p[i-1]));//-100000;
+		samples[i-1].string=j[j_i]["string"].get<int>();
+		samples[i-1].fret=j[j_i]["fret"].get<int>();
+
+		j_ij++;
+		if(j_ij==j[j_i].size())
+		{
+			j_ij=0;
+			j_i++;
+		}
 	}	
 
 	for(int i=0; i<samplesCount; i++)
@@ -372,14 +432,53 @@ void samples_cut(const char* file_name)
 		sample.volumeMax=volumeMax;
 	}
 
+	return samples;
+}
+
+void samples_organize(Samples_cut_sample* samples, int samples_count, char* file_name)
+{
+	Samples_cut_sample samples_board[6][128][100];
+	int samples_board_len[6][128]={0};
+
+	for(int i=0; i<samples_count; i++)
+	{
+		Samples_cut_sample sample=samples[i];
+		samples_board[sample.string][sample.fret][samples_board_len[sample.string][sample.fret]]=sample;
+		samples_board_len[sample.string][sample.fret]++;
+	}
+
+	json ji;
+	for(int i=0; i<=5; i++)
+	{
+		json jj;
+		for(int j=0; j<=128; j++)
+		{
+			qsort(samples_board[i][j], samples_board_len[i][j], sizeof(Samples_cut_sample), (_CoreCrtNonSecureSearchSortCompareFunction) samples_cut_cmp);
+
+
+			json jk;	
+			for(int k=0; k<samples_board_len[i][j]; k++)
+			{		
+				Samples_cut_sample sample=samples_board[i][j][k];
+				wav_write<char>((file_name+(std::string) "-"+std::to_string(sample.string)+"-"+std::to_string(sample.fret)+std::to_string(k)+".wav").c_str(), sample.data, sample.len*3);
+				std::cout << "\n";
+				std::cout << (double) sample.volumeMax/INT32_MAX;
+				jk.push_back(sample.volumeMax);
+			}
+			jj.push_back(jk);
+		}
+		ji.push_back(jj);
+	}
+	
+	writeFillFile((file_name+(std::string)".json").c_str(), ji.dump());
 	//qsort(samples, samplesCount, sizeof(Samples_cut_sample), (_CoreCrtNonSecureSearchSortCompareFunction) samples_cut_cmp);
 
-	for(int i=0; i<samplesCount; i++)
+	/*for(int i=0; i<samplesCount; i++)
 	{		
-		wav_write<char>((file_name+(std::string) "-"+std::to_string(i)+".wav").c_str(), samples[i].data, samples[i].len*3);
+		wav_write<char>((file_name+(std::string) "-"+std::to_string(j["string"].get<int>())+"-"+std::to_string(j["fret"].get<int>())+std::to_string(i)+".wav").c_str(), samples[i].data, samples[i].len*3);
 		std::cout << "\n";
 		std::cout << (double) samples[i].volumeMax/INT32_MAX;
-	}
+	}*/
 	//fgets()
 }
 
@@ -389,14 +488,19 @@ void samples_cut(const char* file_name)
 
 int main2()
 {
-	samples_cut("44-0-0");
+	//samples_cut("6x6");
 	return 1;
 }
 
 int main()
 {
 	int len;
-	samples_find_cut_points("44-0-0", &len);
+	int* cut_points=samples_find_cut_points("6x6_2", &len);
+	
+	std::string s=readFullFile((char*) "6x6_2.txt");
+	json j=json::parse(s);
+
+	samples_cut("6x6_2", cut_points, len, j);
 }
 
 int main1()
