@@ -1,182 +1,182 @@
 [
 	{
-		string: 0,
-		fret: 0,
-		count: 1
+		"string": 0,
+		"fret": 40,
+		"count": 1
 	},
 	{
-		string: 0,
-		fret: 1,
-		count: 1
+		"string": 0,
+		"fret": 41,
+		"count": 1
 	},
 	{
-		string: 0,
-		fret: 2,
-		count: 1
+		"string": 0,
+		"fret": 42,
+		"count": 1
 	},
 	{
-		string: 0,
-		fret: 3,
-		count: 1
+		"string": 0,
+		"fret": 43,
+		"count": 1
 	},
 	{
-		string: 0,
-		fret: 4,
-		count: 1
+		"string": 0,
+		"fret": 44,
+		"count": 1
 	},
 	{
-		string: 1,
-		fret: 5,
-		count: 1
+		"string": 0,
+		"fret": 45,
+		"count": 1
 	},
 	{
-		string: 1,
-		fret: 0,
-		count: 1
+		"string": 1,
+		"fret": 45,
+		"count": 1
 	},
 	{
-		string: 1,
-		fret: 1,
-		count: 1
+		"string": 1,
+		"fret": 46,
+		"count": 1
 	},
 	{
-		string: 1,
-		fret: 2,
-		count: 1
+		"string": 1,
+		"fret": 47,
+		"count": 1
 	},
 	{
-		string: 1,
-		fret: 3,
-		count: 1
+		"string": 1,
+		"fret": 48,
+		"count": 1
 	},
 	{
-		string: 1,
-		fret: 4,
-		count: 1
+		"string": 1,
+		"fret": 49,
+		"count": 1
 	},
 	{
-		string: 2,
-		fret: 5,
-		count: 1
+		"string": 1,
+		"fret": 50,
+		"count": 1
 	},
 	{
-		string: 2,
-		fret: 0,
-		count: 1
+		"string": 2,
+		"fret": 50,
+		"count": 1
 	},
 	{
-		string: 2,
-		fret: 1,
-		count: 1
+		"string": 2,
+		"fret": 51,
+		"count": 1
 	},
 	{
-		string: 2,
-		fret: 2,
-		count: 1
+		"string": 2,
+		"fret": 52,
+		"count": 1
 	},
 	{
-		string: 2,
-		fret: 3,
-		count: 1
+		"string": 2,
+		"fret": 53,
+		"count": 1
 	},
 	{
-		string: 2,
-		fret: 4,
-		count: 1
+		"string": 2,
+		"fret": 54,
+		"count": 1
 	},
 	{
-		string: 2,
-		fret: 5,
-		count: 1
+		"string": 2,
+		"fret": 55,
+		"count": 1
 	},
 	{
-		string: 3,
-		fret: 0,
-		count: 1
+		"string": 3,
+		"fret": 55,
+		"count": 1
 	},
 	{
-		string: 3,
-		fret: 1,
-		count: 1
+		"string": 3,
+		"fret": 56,
+		"count": 1
 	},
 	{
-		string: 3,
-		fret: 2,
-		count: 1
+		"string": 3,
+		"fret": 57,
+		"count": 1
 	},
 	{
-		string: 3,
-		fret: 3,
-		count: 1
+		"string": 3,
+		"fret": 58,
+		"count": 1
 	},
 	{
-		string: 3,
-		fret: 4,
-		count: 1
+		"string": 3,
+		"fret": 59,
+		"count": 1
 	},
 	{
-		string: 3,
-		fret: 5,
-		count: 1
+		"string": 3,
+		"fret": 60,
+		"count": 1
 	},
 	{
-		string: 4,
-		fret: 0,
-		count: 1
+		"string": 4,
+		"fret": 59,
+		"count": 1
 	},
 	{
-		string: 4,
-		fret: 1,
-		count: 1
+		"string": 4,
+		"fret": 60,
+		"count": 1
 	},
 	{
-		string: 4,
-		fret: 2,
-		count: 1
+		"string": 4,
+		"fret": 61,
+		"count": 1
 	},
 	{
-		string: 4,
-		fret: 3,
-		count: 1
+		"string": 4,
+		"fret": 62,
+		"count": 1
 	},
 	{
-		string: 4,
-		fret: 4,
-		count: 1
+		"string": 4,
+		"fret": 63,
+		"count": 1
 	},
 	{
-		string: 4,
-		fret: 5,
-		count: 1
+		"string": 4,
+		"fret": 64,
+		"count": 1
 	},
 	{
-		string: 5,
-		fret: 0,
-		count: 1
+		"string": 5,
+		"fret": 64,
+		"count": 1
 	},
 	{
-		string: 5,
-		fret: 1,
-		count: 1
+		"string": 5,
+		"fret": 65,
+		"count": 1
 	},
 	{
-		string: 5,
-		fret: 2,
-		count: 1
+		"string": 5,
+		"fret": 66,
+		"count": 1
 	},
 	{
-		string: 5,
-		fret: 3,
-		count: 1
+		"string": 5,
+		"fret": 67,
+		"count": 1
 	},
 	{
-		string: 5,
-		fret: 4,
-		count: 1
+		"string": 5,
+		"fret": 68,
+		"count": 1
 	},
 	{
-		string: 5,
-		fret: 5,
-		count: 1
+		"string": 5,
+		"fret": 69,
+		"count": 1
 	}
 ]

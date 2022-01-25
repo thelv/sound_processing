@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <string>
 #include "json.hpp"
+#include <regex>
 
 #define WAV_HEADER_SIZE 44
 #define BUF_LEN 216282
@@ -61,6 +62,18 @@ template <typename type> void wav_read(const char* file_name, type* buf, int len
 	fseek(f, WAV_HEADER_SIZE, SEEK_SET);
 	fread(buf, sizeof(type), len, f);
 	fclose(f);
+}
+
+char* wav_read(const char* file_name, int* len)
+{
+	FILE* f=fopen(file_name, "rb");
+	fseek(f, 0, SEEK_END);
+	*len=ftell(f)-WAV_HEADER_SIZE;
+	char* buf=new char[*len];
+	fseek(f, WAV_HEADER_SIZE, SEEK_SET);
+	fread(buf, 1, *len, f);
+	fclose(f);
+	return buf;
 }
 
 void wav_read(const char* file_name, void* buf, int* len)
@@ -318,10 +331,9 @@ int* samples_find_cut_points(const char* file_name, int* len_return)
 	int cut_points_n=0;
 
 	cut_points[cut_points_n++]=0;
-
-	char* buf=new char[150000000];
+	
 	int len;
-	wav_read(((std::string) file_name+".wav").c_str(), buf, &len);
+	char* buf=wav_read(((std::string) file_name+".wav").c_str(), &len);
 
 	int samples_len=len/3;
 	int cursor=0;
@@ -364,8 +376,8 @@ int* samples_find_cut_points(const char* file_name, int* len_return)
 
 	end:
 
-		cut_points[++cut_points_n]=samples_len;
-		*len_return=cut_points_n;
+		cut_points[cut_points_n++]=samples_len;
+		*len_return=cut_points_n-1;
 		return cut_points;
 }
 
@@ -373,9 +385,8 @@ Samples_cut_sample* samples_cut(const char* file_name, int* cut_points, int cut_
 {	
 	Samples_cut_sample* samples=new Samples_cut_sample[cut_points_n];
 
-	char* buf=new char[150000000];
 	int len;
-	wav_read(((std::string) file_name+".wav").c_str(), buf, &len);
+	char* buf=wav_read(((std::string) file_name+".wav").c_str(), &len);
 
 	double k=1;//44100./48000;
 
@@ -411,7 +422,7 @@ Samples_cut_sample* samples_cut(const char* file_name, int* cut_points, int cut_
 		samples[i-1].fret=j[j_i]["fret"].get<int>();
 
 		j_ij++;
-		if(j_ij==j[j_i].size())
+		if(j_ij==j[j_i]["count"].get<int>())
 		{
 			j_ij=0;
 			j_i++;
@@ -437,7 +448,16 @@ Samples_cut_sample* samples_cut(const char* file_name, int* cut_points, int cut_
 
 void samples_organize(Samples_cut_sample* samples, int samples_count, char* file_name)
 {
-	Samples_cut_sample samples_board[6][128][100];
+	Samples_cut_sample*** samples_board=new Samples_cut_sample**[6];
+
+	for(int i=0; i<6; i++)
+	{
+		samples_board[i]=new Samples_cut_sample*[128];
+		for(int j=0; j<128; j++)
+		{
+			samples_board[i][j]=new Samples_cut_sample[100];			
+		}
+	}
 	int samples_board_len[6][128]={0};
 
 	for(int i=0; i<samples_count; i++)
@@ -448,24 +468,28 @@ void samples_organize(Samples_cut_sample* samples, int samples_count, char* file
 	}
 
 	json ji;
-	for(int i=0; i<=5; i++)
+	for(int i=0; i<5; i++)
 	{
 		json jj;
-		for(int j=0; j<=128; j++)
+		for(int j=0; j<128; j++)
 		{
 			qsort(samples_board[i][j], samples_board_len[i][j], sizeof(Samples_cut_sample), (_CoreCrtNonSecureSearchSortCompareFunction) samples_cut_cmp);
 
-
-			json jk;	
-			for(int k=0; k<samples_board_len[i][j]; k++)
-			{		
-				Samples_cut_sample sample=samples_board[i][j][k];
-				wav_write<char>((file_name+(std::string) "-"+std::to_string(sample.string)+"-"+std::to_string(sample.fret)+std::to_string(k)+".wav").c_str(), sample.data, sample.len*3);
-				std::cout << "\n";
-				std::cout << (double) sample.volumeMax/INT32_MAX;
-				jk.push_back(sample.volumeMax);
+			if(samples_board_len[i][j]!=0)
+			{
+				json jk={{"string", i}, {"note", j}};
+				jk["samples"]=json::array();	
+			
+				for(int k=0; k<samples_board_len[i][j]; k++)
+				{		
+					Samples_cut_sample sample=samples_board[i][j][k];
+					wav_write<char>((file_name+(std::string) "-"+std::to_string(sample.string)+"-"+std::to_string(sample.fret)+"-"+std::to_string(k)+".wav").c_str(), sample.data, sample.len*3);
+					std::cout << "\n";
+					std::cout << (double) sample.volumeMax/INT32_MAX;
+					jk["samples"].push_back({{"volume", sample.volumeMax}});
+				}
+				jj.push_back(jk);
 			}
-			jj.push_back(jk);
 		}
 		ji.push_back(jj);
 	}
@@ -497,10 +521,13 @@ int main()
 	int len;
 	int* cut_points=samples_find_cut_points("6x6_2", &len);
 	
-	std::string s=readFullFile((char*) "6x6_2.txt");
+	std::string s=readFullFile((char*) "6x6_2.json");
+	s=std::regex_replace(s, std::regex("[\\r\\n\\t]"), "");
 	json j=json::parse(s);
 
-	samples_cut("6x6_2", cut_points, len, j);
+	Samples_cut_sample* samples=samples_cut("6x6_2", cut_points, len, j);
+
+	samples_organize(samples, len-1, (char*) "test");
 }
 
 int main1()
