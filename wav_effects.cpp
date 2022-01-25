@@ -468,7 +468,7 @@ void samples_organize(Samples_cut_sample* samples, int samples_count, char* file
 	}
 
 	json ji;
-	for(int i=0; i<5; i++)
+	for(int i=0; i<6; i++)
 	{
 		json jj;
 		for(int j=0; j<128; j++)
@@ -486,12 +486,12 @@ void samples_organize(Samples_cut_sample* samples, int samples_count, char* file
 					wav_write<char>((file_name+(std::string) "-"+std::to_string(sample.string)+"-"+std::to_string(sample.fret)+"-"+std::to_string(k)+".wav").c_str(), sample.data, sample.len*3);
 					std::cout << "\n";
 					std::cout << (double) sample.volumeMax/INT32_MAX;
-					jk["samples"].push_back({{"volume", sample.volumeMax}});
+					jk["samples"].push_back({{"volume", (float) sample.volumeMax/INT32_MAX}});
 				}
-				jj.push_back(jk);
+				ji.push_back(jk);
 			}
 		}
-		ji.push_back(jj);
+		//ji.push_back(jj);
 	}
 	
 	writeFillFile((file_name+(std::string)".json").c_str(), ji.dump());
